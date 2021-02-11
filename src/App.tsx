@@ -1,6 +1,6 @@
 import React from "react";
 import { Helmet } from "react-helmet";
-import { BrowserRouter, Link, Switch, Route } from "react-router-dom";
+import { Link, Switch, Route } from "react-router-dom";
 import About from "./pages/About";
 import Home from "./pages/Home";
 
@@ -9,7 +9,7 @@ function App() {
   const url = "";
   const metaOgImageUrl = "";
   return (
-    <BrowserRouter>
+    <>
       <div>
         <Helmet
           defer={false}
@@ -53,7 +53,7 @@ function App() {
           </Route>
         </Switch>
       </div>
-    </BrowserRouter>
+    </>
   );
 }
 
