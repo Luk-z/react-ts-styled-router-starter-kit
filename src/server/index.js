@@ -18,7 +18,9 @@ require("@babel/register")({
       "transform-assets",
       {
         extensions: ["png", "svg"],
-        name: "static/media/[name].[hash:8].[ext]",
+        limit: 10000,
+        //CRA uses url-loader that by default uses [md4, hex] hash...
+        name: "static/media/[name].[md4:hash:hex:8].[ext]",
       },
     ],
   ],
