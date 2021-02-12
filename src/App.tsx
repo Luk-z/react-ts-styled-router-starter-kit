@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet";
 import { Link, Switch, Route } from "react-router-dom";
 import About from "./pages/About";
 import Home from "./pages/Home";
+import NotFound from "./pages/NotFound";
 
 function App() {
   const defaultLocale = "";
@@ -39,18 +40,30 @@ function App() {
             <li>
               <Link to="/about">About</Link>
             </li>
+            <li>
+              <Link to="/notfound">404</Link>
+            </li>
           </ul>
         </nav>
 
         {/* A <Switch> looks through its children <Route>s and
             renders the first one that matches the current URL. */}
         <Switch>
-          <Route path="/about">
+          <Route exact path="/about">
             <About />
           </Route>
-          <Route path="/">
+          <Route exact path="/">
             <Home />
           </Route>
+          <Route
+            render={({ staticContext }) => {
+              if (staticContext) {
+                staticContext.statusCode = 404;
+              }
+              return <NotFound />;
+            }}
+            path="*"
+          />
         </Switch>
       </div>
     </>

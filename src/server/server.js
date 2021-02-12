@@ -49,11 +49,14 @@ app.get("*", (req, res, next) => {
     } finally {
       sheet.seal();
     }
-    return res.send(
-      data
-        .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
-        .replace("</head><body>", `${styleTags}</head><body>`)
-    );
+
+    return res
+      .status(context.statusCode === 404 ? 404 : 200)
+      .send(
+        data
+          .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
+          .replace("</head><body>", `${styleTags}</head><body>`)
+      );
   });
 });
 
