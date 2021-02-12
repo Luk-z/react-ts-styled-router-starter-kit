@@ -28,7 +28,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "ssr": "node ./src/server/index.js"
+    "ssr": "nodemon ./src/server/index.js"
   },
   "eslintConfig": {
     "extends": [
@@ -55,7 +55,8 @@
     "@babel/register": "^7.12.13",
     "babel-plugin-styled-components": "^1.12.0",
     "babel-plugin-transform-assets": "^1.0.2",
-    "ignore-styles": "^5.0.1"
+    "ignore-styles": "^5.0.1",
+    "nodemon": "^2.0.7"
   },
   "resolutions": {
     "styled-components": "^5"
