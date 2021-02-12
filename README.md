@@ -319,6 +319,158 @@ yarn install
 yarn start
 ```
 
+# SSR
+
+This demo uses `@babel/register` to transpile and build server side code.
+Probably to have more control (and for production build) we must eject CRA and use webpack config file.
+
+```bash
+yarn add express
+
+yarn add -D @babel/preset-env @babel/preset-react @babel/register @babel/preset-typescript ignore-styles babel-plugin-transform-assets
+```
+
+Create a `src/server/index.js` file
+
+```js
+//src/server/index.js
+require("ignore-styles");
+
+require("@babel/register")({
+  ignore: [/(node_modules)/],
+  presets: [
+    "@babel/preset-env",
+    [
+      "@babel/preset-react",
+      {
+        //uses the new jsx transform that came with React 17
+        runtime: "automatic",
+      },
+    ],
+    "@babel/preset-typescript",
+  ],
+  plugins: [
+    [
+      "transform-assets",
+      {
+        extensions: ["png", "svg"],
+        name: "static/media/[name].[hash:8].[ext]",
+      },
+    ],
+  ],
+  extensions: [".svg", ".tsx", ".ts", ".es6", ".es", ".jsx", ".js", ".mjs"],
+});
+
+require("./server");
+```
+
+Create a `src/server/server.js` file
+
+```jsx
+//src/server/server.js
+import express from "express";
+import fs from "fs";
+import path from "path";
+import React from "react";
+import { renderToString } from "react-dom/server";
+import { StaticRouter } from "react-router-dom";
+import { ServerStyleSheet, StyleSheetManager } from "styled-components";
+import App from "../App";
+import GlobalStyle from "../globalStyle";
+
+const PORT = 8000;
+
+const app = express();
+
+app.use("^/$", (req, res, next) => {
+  const { path: location } = req;
+  const context = {};
+  fs.readFile(path.resolve("./build/index.html"), "utf-8", (err, data) => {
+    if (err) {
+      console.log(`ERROR: `, err);
+      return res.status(500).send("Some error happens");
+    }
+    const sheet = new ServerStyleSheet();
+    let html = "";
+    let styleTags = "";
+    try {
+      html = renderToString(
+        <StyleSheetManager sheet={sheet.instance}>
+          <>
+            <GlobalStyle />
+            <StaticRouter location={location} context={context}>
+              <App />
+            </StaticRouter>
+          </>
+        </StyleSheetManager>
+      );
+      styleTags = sheet.getStyleTags(); // or sheet.getStyleElement();
+    } catch (error) {
+      // handle error
+      console.error(error);
+    } finally {
+      sheet.seal();
+    }
+    return res.send(
+      data
+        .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
+        .replace("</head><body>", `${styleTags}</head><body>`)
+    );
+  });
+});
+
+app.use(express.static(path.resolve(__dirname, "../..", "build")));
+
+app.listen(PORT, () => {
+  console.log(`Server started on port ${PORT}`);
+});
+```
+
+Add `ssr` script to `package.json`
+
+```json
+{
+    "scripts": {
+        ...
+        "ssr": "node ./src/server/index.js"
+    }
+}
+```
+
+Remove `<BrowserRouter>` from `App.tsx` and wrap `<App />` Component with
+`<BrowserRouter>` in index.tsx
+
+Remove `src/App.css` cause we use `styled-components`
+
+Copy `src/logo.svg` content and paste inline into a `LogoSvg` component in
+`src/components/Logo.tsx` file. Then remove `src/logo.svg`
+
+On every change build project to generate `build/index.html` file then run
+server
+
+```bash
+yarn build
+
+yarn ssr
+```
+
+Install `nodemon`
+
+```bash
+npm install --save-dev nodemon
+```
+
+Add `nodemon.json`
+
+```json
+//nodemon.json
+{
+  "ignore": "build",
+  "ext": "ts,tsx,js,jsx,mjs,json",
+  "exec": "yarn build && yarn ssr"
+}
+```
+
 # Fork
 
 You cannot always make a branch or pull an existing branch and push back to it,
