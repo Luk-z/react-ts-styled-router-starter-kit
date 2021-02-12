@@ -351,14 +351,30 @@ require("@babel/register")({
   ],
   plugins: [
     [
+      //CRA handle images through 'url-loader' plugin.
+      //'url-loader' encodes images smaller than 10K as base64
+      //otherwise uses[name].[md4: hash: hex: 8].[ext]
       "transform-assets",
       {
-        extensions: ["png", "svg"],
-        name: "static/media/[name].[hash:8].[ext]",
+        extensions: ["bmp", "gif", "jpeg", "jpg", "png"],
+        limit: 10000,
+        //CRA uses url-loader that by default uses [md4, hex] hash...
+        name: "static/media/[name].[md4:hash:hex:8].[ext]",
       },
     ],
+    //CRA handle svg through 'file-loader' plugin
+    //It always format as [name].[md4: hash: hex: 8].[ext]
+    //use 'transform-assets' a second time for svg as 10K limit size is non needed
+    [
+      "transform-assets",
+      {
+        extensions: ["svg"],
+        name: "static/media/[name].[md4:hash:hex:8].[ext]",
+      },
+      "transform-assets-svg",
+    ],
   ],
-  extensions: [".svg", ".tsx", ".ts", ".es6", ".es", ".jsx", ".js", ".mjs"],
+  extensions: [".tsx", ".ts", ".es6", ".es", ".jsx", ".js", ".mjs"],
 });
 
 require("./server");
@@ -382,7 +398,14 @@ const PORT = 8000;
 
 const app = express();
 
-app.use("^/$", (req, res, next) => {
+//first check if the url match build folder entries (except index.html)
+app.use(
+  express.static(path.resolve(__dirname, "../..", "build"), {
+    index: false,
+  })
+);
+
+app.get("*", (req, res, next) => {
   const { path: location } = req;
   const context = {};
   fs.readFile(path.resolve("./build/index.html"), "utf-8", (err, data) => {
@@ -390,6 +413,7 @@ app.use("^/$", (req, res, next) => {
       console.log(`ERROR: `, err);
       return res.status(500).send("Some error happens");
     }
+
     const sheet = new ServerStyleSheet();
     let html = "";
     let styleTags = "";
@@ -411,53 +435,43 @@ app.use("^/$", (req, res, next) => {
     } finally {
       sheet.seal();
     }
-    return res.send(
-      data
-        .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
-        .replace("</head><body>", `${styleTags}</head><body>`)
-    );
+
+    return res
+      .status(context.statusCode === 404 ? 404 : 200)
+      .send(
+        data
+          .replace('<div id="root"></div>', `<div id="root">${html}</div>`)
+          .replace("</head><body>", `${styleTags}</head><body>`)
+      );
   });
 });
-
-app.use(express.static(path.resolve(__dirname, "../..", "build")));
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
 ```
 
-Add `ssr` script to `package.json`
-
-```json
-{
-    "scripts": {
-        ...
-        "ssr": "node ./src/server/index.js"
-    }
-}
-```
-
 Remove `<BrowserRouter>` from `App.tsx` and wrap `<App />` Component with
-`<BrowserRouter>` in index.tsx
+`<BrowserRouter>` in `index.tsx`
 
 Remove `src/App.css` cause we use `styled-components`
 
-Copy `src/logo.svg` content and paste inline into a `LogoSvg` component in
-`src/components/Logo.tsx` file. Then remove `src/logo.svg`
+Update `src/pages/About.tsx` to display images example.
 
-On every change build project to generate `build/index.html` file then run
-server
+Add `src/pages/NotFound.tsx`
 
-```bash
-yarn build
+Create `src/static/images` folder and move `src/logo.svg` into this folder. Add also `logo512.png` and `logo1024.png` images.
 
-yarn ssr
+In `src/components/Logo.tsx` change the import statement of logo to:
+
+```jsx
+import logo from "../static/images/logo.svg";
 ```
 
 Install `nodemon`
 
 ```bash
-npm install --save-dev nodemon
+yarn add -D nodemon
 ```
 
 Add `nodemon.json`
@@ -470,6 +484,32 @@ Add `nodemon.json`
   "exec": "yarn build && yarn ssr"
 }
 ```
+
+Add `ssr` and `start:ssr` script to `package.json`
+
+```json
+{
+    "scripts": {
+        ...
+      "ssr": "node ./src/server/index.js",
+      "start:ssr": "nodemon"
+    }
+}
+```
+
+Before use `nodemon` make a first build to create `build` folder (this avoid `nodemon` to continue rebuild the project if the `build` folder is not found).
+
+```bash
+yarn build
+```
+
+Use `nodemon` because it watch for any file chabges and rebuild the server. This is not the optimal solution cause on every change we rebuild all. Using webpack watch is faster because when files change it doesn't rebuild all the project.
+
+```bash
+yarn start:ssr
+```
+
+Open [localhost:8000/](http://localhost:8000/) in browser then enjoy!
 
 # Fork
 
