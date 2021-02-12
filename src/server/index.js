@@ -15,16 +15,30 @@ require("@babel/register")({
   ],
   plugins: [
     [
+      //CRA handle images through 'url-loader' plugin.
+      //'url-loader' encodes images smaller than 10K as base64
+      //otherwise uses[name].[md4: hash: hex: 8].[ext]
       "transform-assets",
       {
-        extensions: ["png", "svg"],
+        extensions: ["bmp", "gif", "jpeg", "jpg", "png"],
         limit: 10000,
         //CRA uses url-loader that by default uses [md4, hex] hash...
         name: "static/media/[name].[md4:hash:hex:8].[ext]",
       },
     ],
+    //CRA handle svg through 'file-loader' plugin
+    //It always format as [name].[md4: hash: hex: 8].[ext]
+    //use 'transform-assets' a second time for svg as 10K limit size is non needed
+    [
+      "transform-assets",
+      {
+        extensions: ["svg"],
+        name: "static/media/[name].[md4:hash:hex:8].[ext]",
+      },
+      "transform-assets-svg",
+    ],
   ],
-  extensions: [".svg", ".tsx", ".ts", ".es6", ".es", ".jsx", ".js", ".mjs"],
+  extensions: [".tsx", ".ts", ".es6", ".es", ".jsx", ".js", ".mjs"],
 });
 
 require("./server");
