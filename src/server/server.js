@@ -12,7 +12,14 @@ const PORT = 8000;
 
 const app = express();
 
-app.use("^/$", (req, res, next) => {
+//first check if the url match build folder entries (except index.html)
+app.use(
+  express.static(path.resolve(__dirname, "../..", "build"), {
+    index: false,
+  })
+);
+
+app.get("*", (req, res, next) => {
   const { path: location } = req;
   const context = {};
   fs.readFile(path.resolve("./build/index.html"), "utf-8", (err, data) => {
@@ -20,6 +27,7 @@ app.use("^/$", (req, res, next) => {
       console.log(`ERROR: `, err);
       return res.status(500).send("Some error happens");
     }
+
     const sheet = new ServerStyleSheet();
     let html = "";
     let styleTags = "";
@@ -48,8 +56,6 @@ app.use("^/$", (req, res, next) => {
     );
   });
 });
-
-app.use(express.static(path.resolve(__dirname, "../..", "build")));
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
