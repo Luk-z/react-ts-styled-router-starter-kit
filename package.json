@@ -28,7 +28,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "ssr": "nodemon ./src/server/index.js"
+    "ssr": "node ./src/server/index.js",
+    "start:ssr": "nodemon"
   },
   "eslintConfig": {
     "extends": [

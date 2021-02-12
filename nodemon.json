@@ -1,0 +1,4 @@
+{
+  "ext": "ts,tsx",
+  "exec": "yarn build && yarn ssr"
+}
